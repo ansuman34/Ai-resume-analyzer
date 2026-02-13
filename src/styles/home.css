@@ -332,7 +332,6 @@ body {
 }
 
 /* NAV */
-/* ===== NAVBAR FIXED ===== */
 
 .nav {
   position: sticky;
@@ -448,6 +447,24 @@ body {
   box-shadow: 0 14px 40px rgba(76,201,240,.5);
 }
 
+.nav-link-btn {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.nav-link-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(76, 201, 240, 0.3);
+  color: var(--primary);
+}
+
 /* BUTTONS */
 .btn-primary {
   background: linear-gradient(135deg, #4cc9f0, #3a86ff);
@@ -467,10 +484,24 @@ body {
   border-radius: 12px;
   color: var(--primary);
   cursor: pointer;
-  margin-left: 12px;
 }
 
-.hero-btns { margin-top: 30px; }
+.hero-btns .btn-outline {
+  margin-left: 0;
+}
+
+.hero-btns { 
+  margin-top: 30px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.hero-btns a {
+  text-decoration: none;
+  display: inline-block;
+}
 
 @media (max-width: 768px) {
   .btn-primary {

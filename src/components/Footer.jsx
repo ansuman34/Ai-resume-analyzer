@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -28,10 +29,10 @@ export default function Footer() {
 
           <div className="footer-column">
             <h4>Company</h4>
-            <a href="#about">About Us</a>
+            <Link to="/about">About Us</Link>
             <a href="#blog">Blog</a>
             <a href="#careers">Careers</a>
-            <a href="#contact">Contact</a>
+            <Link to="/contact">Contact</Link>
           </div>
 
           <div className="footer-column">
