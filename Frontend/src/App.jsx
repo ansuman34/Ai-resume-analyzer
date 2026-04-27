@@ -12,7 +12,6 @@ import ResumeView from "./pages/ResumeView";
 import ResumeEdit from "./pages/ResumeEdit";
 import AboutUs from "./pages/AboutUs";
 import Contact from "./pages/Contact";
-import TemplatesPage from "./pages/TemplatesPage";
 import PricingPage from "./pages/PricingPage";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -161,11 +160,6 @@ function AppRoutes() {
       <Route path="/contact" element={
         <MainLayout>
           <Contact />
-        </MainLayout>
-      } />
-      <Route path="/templates" element={
-        <MainLayout>
-          <TemplatesPage />
         </MainLayout>
       } />
       <Route path="/pricing" element={

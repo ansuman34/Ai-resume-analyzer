@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
-import { resumeAPI, templateAPI } from "../services/api";
+import { resumeAPI } from "../services/api";
 import Navbar from "../components/Navbar";
 import Background from "../components/Background";
 import "../styles/resume-builder.css";
@@ -10,10 +10,6 @@ import "../styles/resume-builder.css";
 export default function ResumeBuilder() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [templates, setTemplates] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiInput, setAiInput] = useState({
@@ -22,11 +18,10 @@ export default function ResumeBuilder() {
     jobDescription: "",
     existingText: "",
   });
-  const [currentStep, setCurrentStep] = useState(1); // 1: template selection, 2: form filling
 
   const [resumeData, setResumeData] = useState({
     name: "",
-    template: "",
+    template: "default-standard",
     content: {
       personalInfo: {
         fullName: user?.firstName + " " + user?.lastName || "",
@@ -47,39 +42,7 @@ export default function ResumeBuilder() {
     },
   });
 
-  useEffect(() => {
-    const fetchTemplates = async () => {
-      try {
-        const response = await templateAPI.getTemplates();
-        const sortedTemplates = [...(response.templates || [])].sort((a, b) => a.name.localeCompare(b.name));
-        setTemplates(sortedTemplates);
-      } catch (error) {
-        console.error("Failed to fetch templates:", error);
-      }
-    };
 
-    fetchTemplates();
-  }, []);
-
-  useEffect(() => {
-    const templateId = searchParams.get("template");
-    if (!templateId || !templates.length || selectedTemplate) return;
-
-    const template = templates.find((item) => item._id === templateId);
-    if (template) {
-      handleTemplateSelect(template);
-    }
-  }, [searchParams, selectedTemplate, templates]);
-
-  const handleTemplateSelect = (template) => {
-    setSelectedTemplate(template);
-    setResumeData(prev => ({
-      ...prev,
-      template: template._id,
-      name: `${template.name} Resume`,
-    }));
-    setCurrentStep(2);
-  };
 
   const handlePersonalInfoChange = (field, value) => {
     setResumeData(prev => ({
@@ -155,10 +118,7 @@ export default function ResumeBuilder() {
       return;
     }
 
-    if (!resumeData.template) {
-      alert("Please select a template.");
-      return;
-    }
+
 
     if (!resumeData.content.personalInfo.fullName.trim() || !resumeData.content.personalInfo.email.trim()) {
       alert("Please fill in your full name and email address.");
@@ -192,11 +152,6 @@ export default function ResumeBuilder() {
   };
 
   const handleAIGenerate = async () => {
-    if (!selectedTemplate?._id) {
-      alert("Please select a template first.");
-      return;
-    }
-
     setAiLoading(true);
     try {
       const response = await resumeAPI.buildResumeWithAI({
@@ -204,7 +159,7 @@ export default function ResumeBuilder() {
         experienceLevel: aiInput.experienceLevel.trim(),
         jobDescription: aiInput.jobDescription.trim(),
         existingText: aiInput.existingText.trim(),
-        templateId: selectedTemplate._id,
+        templateId: "default-standard",
         createDraft: false,
         resumeName: resumeData.name,
       });
@@ -225,125 +180,7 @@ export default function ResumeBuilder() {
     }
   };
 
-  if (currentStep === 1) {
-    const categories = [
-      { id: "all", label: "All Templates" },
-      { id: "professional", label: "Professional" },
-      { id: "tech", label: "Tech & IT" },
-      { id: "creative", label: "Creative" },
-      { id: "academic", label: "Academic" },
-      { id: "executive", label: "Executive" },
-      { id: "minimal", label: "Minimal" },
-    ];
 
-    const filteredTemplates = selectedCategory === "all"
-      ? templates
-      : templates.filter((template) => template.category === selectedCategory);
-
-    return (
-      <div className="resume-builder-container">
-        <Background />
-        <Navbar />
-        <div className="content-wrapper">
-          <motion.div
-            className="builder-header"
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h1>Choose a Template</h1>
-            <p>Select a professional template to get started with your resume</p>
-          </motion.div>
-
-          <motion.div
-            className="template-categories"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                type="button"
-                className={`template-category-btn ${selectedCategory === category.id ? "active" : ""}`}
-                onClick={() => setSelectedCategory(category.id)}
-              >
-                {category.label}
-              </button>
-            ))}
-          </motion.div>
-
-          <motion.div
-            className="templates-grid"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            {filteredTemplates.map((template) => (
-              <motion.div
-                key={template._id}
-                className="template-card"
-                whileHover={{ scale: 1.05, y: -5 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleTemplateSelect(template)}
-              >
-                <div className="template-image">
-                  <img src={template.image} alt={template.name} />
-                </div>
-                <div className="template-info">
-                  <h3>{template.name}</h3>
-                  <p>{template.description}</p>
-                  <div className="template-features">
-                    {template.features.slice(0, 2).map((feature, i) => (
-                      <span key={i} className="feature-tag">✓ {feature}</span>
-                    ))}
-                  </div>
-                  {template.isPremium && (
-                    <div className="premium-badge">${template.price}/month</div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-            {!filteredTemplates.length && (
-              <div style={{ color: "#94a3b8", textAlign: "center", gridColumn: "1 / -1" }}>
-                No templates found for this category.
-              </div>
-            )}
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
-
-  // Ensure template is selected before showing form
-  if (!selectedTemplate) {
-    return (
-      <div className="resume-builder-container">
-        <Background />
-        <Navbar />
-        <div className="content-wrapper">
-          <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-            Please select a template first.
-            <br />
-            <button
-              onClick={() => setCurrentStep(1)}
-              style={{
-                marginTop: '20px',
-                padding: '10px 20px',
-                background: '#4cc9f0',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-            >
-              Go Back to Templates
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="resume-builder-container">
@@ -556,7 +393,7 @@ export default function ResumeBuilder() {
                     <label>Start Date</label>
                     <input
                       type="month"
-                      value={exp.startDate}
+                      value={exp.startDate ? exp.startDate.substring(0, 7) : ''}
                       onChange={(e) => handleArrayItemChange('workExperience', index, 'startDate', e.target.value)}
                     />
                   </div>
@@ -564,7 +401,7 @@ export default function ResumeBuilder() {
                     <label>End Date</label>
                     <input
                       type="month"
-                      value={exp.endDate}
+                      value={exp.endDate ? exp.endDate.substring(0, 7) : ''}
                       onChange={(e) => handleArrayItemChange('workExperience', index, 'endDate', e.target.value)}
                       disabled={exp.currentlyWorking}
                     />
@@ -744,7 +581,7 @@ export default function ResumeBuilder() {
                     <label>Start Date</label>
                     <input
                       type="month"
-                      value={edu.startDate}
+                      value={edu.startDate ? edu.startDate.substring(0, 7) : ''}
                       onChange={(e) => handleArrayItemChange('education', index, 'startDate', e.target.value)}
                     />
                   </div>
@@ -752,7 +589,7 @@ export default function ResumeBuilder() {
                     <label>End Date</label>
                     <input
                       type="month"
-                      value={edu.endDate}
+                      value={edu.endDate ? edu.endDate.substring(0, 7) : ''}
                       onChange={(e) => handleArrayItemChange('education', index, 'endDate', e.target.value)}
                     />
                   </div>
@@ -1016,9 +853,9 @@ export default function ResumeBuilder() {
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => setCurrentStep(1)}
+              onClick={() => navigate('/dashboard')}
             >
-              Back to Templates
+              Back to Dashboard
             </button>
             <button
               type="submit"

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { resumeAPI } from "../services/api";
 import Background from "../components/Background";
 import "../styles/ats-analysis.css";
@@ -11,7 +11,10 @@ export default function ATSAnalysis() {
   const [jobDescription, setJobDescription] = useState("");
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [improving, setImproving] = useState(false);
   const [error, setError] = useState("");
+  const [parsedText, setParsedText] = useState("");
+  const navigate = useNavigate();
 
   const handleAnalyze = async (event) => {
     event.preventDefault();
@@ -33,11 +36,42 @@ export default function ATSAnalysis() {
       const response = await resumeAPI.analyzePdf(resumeFile, payload);
 
       setAnalysis(response.analysis);
+      setParsedText(response.resumeText);
     } catch (err) {
       console.error("ATS analysis failed:", err);
       setError(err.message || "Failed to analyze resume. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImprove = async () => {
+    if (!parsedText) {
+      setError("No resume text available to improve. Please run the analysis first.");
+      return;
+    }
+
+    setImproving(true);
+    setError("");
+    try {
+      const response = await resumeAPI.buildResumeWithAI({
+        targetRole: targetRole.trim(),
+        jobDescription: jobDescription.trim(),
+        existingText: parsedText,
+        createDraft: true,
+        resumeName: `Improved ${targetRole || 'Resume'}`,
+      });
+
+      if (response.resume && response.resume._id) {
+        navigate(`/resume-view/${response.resume._id}?draft=1`);
+      } else {
+        throw new Error("Failed to generate resume draft.");
+      }
+    } catch (err) {
+      console.error("Failed to improve resume:", err);
+      setError(err.message || "Failed to generate improved resume. Please try again.");
+    } finally {
+      setImproving(false);
     }
   };
 
@@ -132,6 +166,26 @@ export default function ATSAnalysis() {
                 <span>{analysis.score}</span>
                 <small>/100</small>
               </div>
+            </div>
+
+            <div className="ats-improve-section" style={{ marginBottom: '2rem', textAlign: 'center', background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ marginTop: 0, marginBottom: '0.5rem', color: '#0f172a' }}>Want a better score?</h3>
+              <p style={{ color: '#64748b', marginBottom: '1rem', fontSize: '14px' }}>Let AI rewrite and format your resume to perfectly match this job description.</p>
+              <button 
+                className="btn-primary" 
+                onClick={handleImprove} 
+                disabled={improving}
+                style={{ width: '100%', maxWidth: '300px', margin: '0 auto', display: 'flex', justifyContent: 'center' }}
+              >
+                {improving ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="spinner-small" style={{ width: '16px', height: '16px', border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></span>
+                    Improving with AI...
+                  </span>
+                ) : (
+                  "✨ Improve & Generate Resume"
+                )}
+              </button>
             </div>
 
             <div className="result-metrics">

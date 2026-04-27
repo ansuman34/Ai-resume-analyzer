@@ -270,12 +270,91 @@
 
 /* Resume Content */
 .resume-content {
-  background: rgba(18, 26, 47, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  background: white;
+  color: black;
+  border-radius: 8px;
   padding: 40px;
   margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-family: "Times New Roman", Times, serif;
+}
+
+.resume-content * {
+  color: black !important;
+  border-color: black !important;
+}
+
+.resume-header-custom {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.resume-header-custom h1 {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.resume-header-custom .contact-links {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.resume-summary-custom {
+  font-size: 14px;
+  text-align: justify;
+  margin-bottom: 20px;
+}
+
+.resume-section-custom {
+  margin-bottom: 15px;
+}
+
+.resume-section-custom h2 {
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  border-bottom: 1px solid black;
+  padding-bottom: 2px;
+  margin-bottom: 8px;
+}
+
+.resume-item-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  font-size: 14px;
+}
+
+.resume-item-row.bold {
+  font-weight: bold;
+}
+
+.resume-item-row.italic {
+  font-style: italic;
+}
+
+.resume-bullets {
+  margin: 4px 0 10px 0;
+  padding-left: 20px;
+  font-size: 14px;
+}
+
+.resume-bullets li {
+  margin-bottom: 2px;
+}
+
+.resume-skills-block {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.resume-skills-block span.bold {
+  font-weight: bold;
 }
 
 .resume-section {
@@ -629,5 +708,33 @@
 
   .resume-footer button {
     width: 100%;
+  }
+}
+
+/* Print Styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .resume-content, .resume-content * {
+    visibility: visible;
+  }
+  .resume-content {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  .resume-view-container, .content-wrapper, body, html {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .navbar, .background-container, .resume-header, .analysis-panel, .resume-footer {
+    display: none !important;
   }
 }

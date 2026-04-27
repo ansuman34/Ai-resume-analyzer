@@ -115,23 +115,19 @@ router.get('/:id', auth, validateResumeId, async (req, res) => {
 // Create new resume
 router.post('/', auth, [
   body('name').trim().isLength({ min: 1 }),
-  body('template').trim().isLength({ min: 1 }),
   body('content').isObject(),
   body('status').optional().isIn(['draft', 'saved'])
 ], async (req, res) => {
   try {
     if (sendValidationErrors(req, res)) return;
 
-    const { name, template, content, status } = req.body;
-
-    const templateDoc = await Template.findById(template);
-    const templateName = templateDoc ? templateDoc.name : 'Professional Classic';
+    const { name, content, status } = req.body;
 
     const resume = new Resume({
       user: req.user._id,
       name,
-      template,
-      templateName,
+      template: 'default-standard',
+      templateName: 'Default Standard',
       content,
       status: status || 'draft'
     });
@@ -144,7 +140,7 @@ router.post('/', auth, [
     });
   } catch (error) {
     console.error('Create resume error:', error);
-    res.status(500).json({ error: 'Server error creating resume' });
+    res.status(500).json({ error: 'Server error creating resume', details: error.message, stack: error.stack });
   }
 });
 
@@ -152,7 +148,6 @@ router.post('/', auth, [
 router.put('/:id', auth, [
   ...validateResumeId,
   body('name').optional().trim().isLength({ min: 1 }),
-  body('template').optional().trim().isLength({ min: 1 }),
   body('content').optional().isObject()
 ], async (req, res) => {
   try {
@@ -166,13 +161,6 @@ router.put('/:id', auth, [
         updates[field] = req.body[field];
       }
     });
-
-    if (updates.template) {
-      const templateDoc = await Template.findById(updates.template);
-      if (templateDoc) {
-        updates.templateName = templateDoc.name;
-      }
-    }
 
     const resume = await Resume.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },

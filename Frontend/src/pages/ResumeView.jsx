@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { resumeAPI, templateAPI } from "../services/api";
-import { generateResumePDF } from "../utils/pdfGenerator";
 import { resolveTemplateTheme } from "../utils/resumeTemplateTheme";
 import Navbar from "../components/Navbar";
 import Background from "../components/Background";
@@ -20,6 +19,7 @@ export default function ResumeView() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const resumeRef = useRef(null);
   const showDraftActions = searchParams.get("draft") === "1" || resume?.status === "draft";
 
   useEffect(() => {
@@ -42,20 +42,8 @@ export default function ResumeView() {
     fetchData();
   }, [id]);
 
-  const handleDownload = async () => {
-    if (!resume) return;
-
-    setDownloading(true);
-    try {
-      // Find the template name from the templates list by ID or name match
-      const template = templates.find(t => t._id?.toString() === resume.template?.toString());
-      await generateResumePDF(resume, template || (resume.templateName || 'Professional Classic'));
-    } catch (error) {
-      console.error('Failed to download resume:', error);
-      alert('Failed to download resume. Please try again.');
-    } finally {
-      setDownloading(false);
-    }
+  const handleDownload = () => {
+    window.print();
   };
 
   const handleSaveDraft = async () => {
@@ -289,252 +277,117 @@ export default function ResumeView() {
           </motion.section>
         )}
 
-        <div
-          className="resume-content"
-          style={{
-            borderColor: `${theme.accentColor}33`,
-            background: theme.backgroundColor,
-            color: theme.primaryColor,
-            fontFamily: theme.fontFamily,
-          }}
-        >
-          {/* Personal Information */}
-          <motion.section
-            className="resume-section"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="section-title" style={{ borderBottomColor: theme.accentColor, color: "black" }}>
-              <h2>Contact Information</h2>
+        <div className="resume-content" ref={resumeRef}>
+          <div className="resume-header-custom">
+            <h1>{personalInfo?.fullName || "Your Name"}</h1>
+            {personalInfo?.location && <div>{personalInfo.location}</div>}
+            <div className="contact-links">
+              {personalInfo?.phone && <span>{personalInfo.phone}</span>}
+              {personalInfo?.phone && personalInfo?.email && <span>|</span>}
+              {personalInfo?.email && <span>{personalInfo.email}</span>}
+              {personalInfo?.email && personalInfo?.linkedin && <span>|</span>}
+              {personalInfo?.linkedin && <span><a href={personalInfo.linkedin} target="_blank" rel="noreferrer">LinkedIn</a></span>}
+              {personalInfo?.linkedin && personalInfo?.github && <span>|</span>}
+              {personalInfo?.github && <span><a href={personalInfo.github} target="_blank" rel="noreferrer">GitHub</a></span>}
+              {personalInfo?.github && personalInfo?.website && <span>|</span>}
+              {personalInfo?.website && <span><a href={personalInfo.website} target="_blank" rel="noreferrer">Portfolio</a></span>}
             </div>
-            <div className="personal-info-grid">
-              {personalInfo?.fullName && (
-                <div className="info-item">
-                  <strong>Name:</strong> {personalInfo.fullName}
-                </div>
-              )}
-              {personalInfo?.email && (
-                <div className="info-item">
-                  <strong>Email:</strong> <a href={`mailto:${personalInfo.email}`}>{personalInfo.email}</a>
-                </div>
-              )}
-              {personalInfo?.phone && (
-                <div className="info-item">
-                  <strong>Phone:</strong> <a href={`tel:${personalInfo.phone}`}>{personalInfo.phone}</a>
-                </div>
-              )}
-              {personalInfo?.location && (
-                <div className="info-item">
-                  <strong>Location:</strong> {personalInfo.location}
-                </div>
-              )}
-              {personalInfo?.website && (
-                <div className="info-item">
-                  <strong>Website:</strong> <a href={personalInfo.website} target="_blank" rel="noopener noreferrer">{personalInfo.website}</a>
-                </div>
-              )}
-              {personalInfo?.linkedin && (
-                <div className="info-item">
-                  <strong>LinkedIn:</strong> <a href={personalInfo.linkedin} target="_blank" rel="noopener noreferrer">Profile</a>
-                </div>
-              )}
-              {personalInfo?.github && (
-                <div className="info-item">
-                  <strong>GitHub:</strong> <a href={personalInfo.github} target="_blank" rel="noopener noreferrer">Profile</a>
-                </div>
-              )}
+          </div>
+
+          {personalInfo?.summary && (
+            <div className="resume-summary-custom">
+              {personalInfo.summary}
             </div>
+          )}
 
-            {personalInfo?.summary && (
-              <div className="summary-section">
-                <h3>Professional Summary</h3>
-                <p>{personalInfo.summary}</p>
-              </div>
-            )}
-          </motion.section>
-
-          {/* Work Experience */}
-          {workExperience && workExperience.length > 0 && (
-            <motion.section
-              className="resume-section"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="section-title" style={{ borderBottomColor: theme.accentColor }}>
-                <h2>Work Experience</h2>
-              </div>
-              {workExperience.map((exp, index) => (
-                <div key={index} className="experience-entry">
-                  <div className="entry-header">
-                    <div>
-                      <h3>{exp.position}</h3>
-                      <p className="company-name">{exp.company}</p>
-                    </div>
-                    <span className="date-range">
-                      {exp.startDate} {!exp.currentlyWorking && exp.endDate ? `- ${exp.endDate}` : exp.currentlyWorking ? "- Present" : ""}
-                    </span>
+          {education && education.length > 0 && (
+            <div className="resume-section-custom">
+              <h2>Education</h2>
+              {education.map((edu, index) => (
+                <div key={index} style={{ marginBottom: "10px" }}>
+                  <div className="resume-item-row bold">
+                    <span>{edu.school}</span>
+                    <span>{edu.startDate} {edu.endDate ? `- ${edu.endDate}` : ""}</span>
                   </div>
-                  {exp.description && <p className="entry-description">{exp.description}</p>}
+                  <div className="resume-item-row italic">
+                    <span>{edu.degree} {edu.field ? `in ${edu.field}` : ""}</span>
+                  </div>
+                  {edu.description && (
+                    <div className="resume-item-row">
+                      <span>{edu.description}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {skills && skills.length > 0 && (
+            <div className="resume-section-custom">
+              <h2>Skills</h2>
+              <div className="resume-skills-block">
+                <span className="bold">Technologies/Skills: </span>
+                <span>{skills.map(s => s.skill || s).join(", ")}</span>
+              </div>
+            </div>
+          )}
+
+          {workExperience && workExperience.length > 0 && (
+            <div className="resume-section-custom">
+              <h2>Experience</h2>
+              {workExperience.map((exp, index) => (
+                <div key={index} style={{ marginBottom: "12px" }}>
+                  <div className="resume-item-row bold">
+                    <span>{exp.company}</span>
+                    <span>{exp.startDate} {!exp.currentlyWorking && exp.endDate ? `- ${exp.endDate}` : exp.currentlyWorking ? "- Present" : ""}</span>
+                  </div>
+                  <div className="resume-item-row italic">
+                    <span>{exp.position}</span>
+                  </div>
+                  {exp.description && <div style={{ fontSize: "14px", marginTop: "4px" }}>{exp.description}</div>}
                   {exp.achievements && exp.achievements.length > 0 && (
-                    <ul className="achievements-list">
-                      {exp.achievements.map((achievement, i) => (
-                        <li key={i}>{achievement}</li>
+                    <ul className="resume-bullets">
+                      {exp.achievements.map((ach, i) => (
+                        <li key={i}>{ach}</li>
                       ))}
                     </ul>
                   )}
                 </div>
               ))}
-            </motion.section>
+            </div>
           )}
 
-          {/* Education */}
-          {education && education.length > 0 && (
-            <motion.section
-              className="resume-section"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <div className="section-title" style={{ borderBottomColor: theme.accentColor }}>
-                <h2>Education</h2>
-              </div>
-              {education.map((edu, index) => (
-                <div key={index} className="education-entry">
-                  <div className="entry-header">
-                    <div>
-                      <h3>{edu.degree}</h3>
-                      <p className="school-name">{edu.school}</p>
-                      {edu.field && <p className="field-name">{edu.field}</p>}
-                    </div>
-                    <span className="date-range">
-                      {edu.startDate} {edu.endDate ? `- ${edu.endDate}` : ""}
-                    </span>
-                  </div>
-                  {edu.description && <p className="entry-description">{edu.description}</p>}
-                </div>
-              ))}
-            </motion.section>
-          )}
-
-          {/* Skills */}
-          {skills && skills.length > 0 && (
-            <motion.section
-              className="resume-section"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <div className="section-title" style={{ borderBottomColor: theme.accentColor }}>
-                <h2>Skills</h2>
-              </div>
-              <div className="skills-display">
-                {skills.map((skillObj, index) => (
-                  <div key={index} className="skill-badge">
-                    <span className="skill-name">{skillObj.skill || skillObj}</span>
-                    {skillObj.proficiency && <span className={`proficiency-badge proficiency-${skillObj.proficiency.toLowerCase()}`}>{skillObj.proficiency}</span>}
-                  </div>
-                ))}
-              </div>
-            </motion.section>
-          )}
-
-          {/* Certifications */}
-          {certifications && certifications.length > 0 && (
-            <motion.section
-              className="resume-section"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              <div className="section-title" style={{ borderBottomColor: theme.accentColor }}>
-                <h2>Certifications</h2>
-              </div>
-              {certifications.map((cert, index) => (
-                <div key={index} className="cert-entry">
-                  <div className="entry-header">
-                    <div>
-                      <h3>{cert.name}</h3>
-                      <p className="issuer-name">{cert.issuer}</p>
-                    </div>
-                    {cert.date && <span className="date-range">{cert.date}</span>}
-                  </div>
-                  {cert.credentialUrl && (
-                    <p>
-                      <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer">
-                        View Credential →
-                      </a>
-                    </p>
-                  )}
-                </div>
-              ))}
-            </motion.section>
-          )}
-
-          {/* Projects */}
           {projects && projects.length > 0 && (
-            <motion.section
-              className="resume-section"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-            >
-              <div className="section-title" style={{ borderBottomColor: theme.accentColor }}>
-                <h2>Projects</h2>
-              </div>
-              {projects.map((project, index) => (
-                <div key={index} className="project-entry">
-                  <div className="entry-header">
-                    <div>
-                      <h3>{project.name}</h3>
-                      {project.technologies && project.technologies.length > 0 && (
-                        <div className="tech-stack">
-                          {project.technologies.map((tech, i) => (
-                            <span key={i} className="tech">{tech}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <span className="date-range">
-                      {project.startDate} {project.endDate ? `- ${project.endDate}` : ""}
-                    </span>
+            <div className="resume-section-custom">
+              <h2>Projects</h2>
+              {projects.map((proj, index) => (
+                <div key={index} style={{ marginBottom: "12px" }}>
+                  <div className="resume-item-row bold">
+                    <span>{proj.name} {proj.link && <a href={proj.link} target="_blank" rel="noreferrer" style={{fontWeight: "normal", fontSize: "12px"}}>[Link]</a>}</span>
+                    <span>{proj.startDate} {proj.endDate ? `- ${proj.endDate}` : ""}</span>
                   </div>
-                  {project.description && <p className="entry-description">{project.description}</p>}
-                  {project.link && (
-                    <p>
-                      <a href={project.link} target="_blank" rel="noopener noreferrer">
-                        View Project →
-                      </a>
-                    </p>
+                  {proj.technologies && proj.technologies.length > 0 && (
+                    <div className="resume-item-row italic">
+                      <span>{proj.technologies.join(", ")}</span>
+                    </div>
                   )}
+                  {proj.description && <div style={{ fontSize: "14px", marginTop: "4px" }}>{proj.description}</div>}
                 </div>
               ))}
-            </motion.section>
+            </div>
           )}
 
-          {/* Languages */}
-          {languages && languages.length > 0 && (
-            <motion.section
-              className="resume-section"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-            >
-              <div className="section-title" style={{ borderBottomColor: theme.accentColor }}>
-                <h2>Languages</h2>
-              </div>
-              <div className="languages-grid">
-                {languages.map((lang, index) => (
-                  <div key={index} className="language-item">
-                    <span className="language-name">{lang.language}</span>
-                    <span className={`proficiency-badge proficiency-${lang.proficiency.toLowerCase()}`}>
-                      {lang.proficiency}
-                    </span>
-                  </div>
+          {certifications && certifications.length > 0 && (
+            <div className="resume-section-custom">
+              <h2>Certifications & Achievements</h2>
+              <ul className="resume-bullets" style={{ listStyleType: "disc" }}>
+                {certifications.map((cert, index) => (
+                  <li key={index}>
+                    <span className="bold">{cert.name}</span> - {cert.issuer} {cert.date ? `(${cert.date})` : ""}
+                  </li>
                 ))}
-              </div>
-            </motion.section>
+              </ul>
+            </div>
           )}
         </div>
 

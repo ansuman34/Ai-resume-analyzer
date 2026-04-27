@@ -12,7 +12,6 @@ export default function ResumeEdit() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [resumeData, setResumeData] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [error, setError] = useState(null);
@@ -97,21 +96,7 @@ export default function ResumeEdit() {
     }
   };
 
-  const handleDownload = async () => {
-    if (!resumeData) return;
 
-    setDownloading(true);
-    try {
-      // Find the template name from the templates list by ID or name match
-      const template = templates.find(t => t._id?.toString() === resumeData.template?.toString());
-      await generateResumePDF(resumeData, template || (resumeData.templateName || 'Professional Classic'));
-    } catch (error) {
-      console.error('Failed to download resume:', error);
-      alert('Failed to download resume. Please try again.');
-    } finally {
-      setDownloading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -696,14 +681,6 @@ export default function ResumeEdit() {
               onClick={() => navigate(`/resume-view/${id}`)}
             >
               ← Cancel
-            </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={handleDownload}
-              disabled={downloading}
-            >
-              {downloading ? '⏳' : '📄'} {downloading ? 'Downloading...' : 'Download PDF'}
             </button>
             <button
               type="submit"

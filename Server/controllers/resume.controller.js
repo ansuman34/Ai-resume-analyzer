@@ -197,21 +197,11 @@ const buildResumeWithAI = async (req, res) => {
     const content = normalizeResumeContent(parsed.content || {});
 
     if (createDraft) {
-      let templateName = 'Professional Classic';
-      let templateRef = templateId || 'professional-classic';
-      if (templateId) {
-        const template = await Template.findById(templateId);
-        if (template) {
-          templateName = template.name;
-          templateRef = template._id.toString();
-        }
-      }
-
       const resume = new Resume({
         user: req.user._id,
         name: generatedName,
-        template: templateRef,
-        templateName,
+        template: 'default-standard',
+        templateName: 'Default Standard',
         content,
         status: 'draft'
       });
@@ -232,7 +222,7 @@ const buildResumeWithAI = async (req, res) => {
     });
   } catch (error) {
     console.error('Error building resume with AI:', error);
-    return res.status(500).json({ error: 'Failed to generate resume with AI.' });
+    return res.status(500).json({ error: error.message || 'Failed to generate resume with AI.' });
   }
 };
 

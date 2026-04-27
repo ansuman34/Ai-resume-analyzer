@@ -2,7 +2,6 @@ import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import ScorePreview from "../components/ScorePreview";
 import Companies from "../components/Companies";
-import Templates from "../components/Templates";
 import Background from "../components/Background";
 import "../styles/home.css";
 
@@ -15,7 +14,6 @@ export default function Home() {
         <Hero />
         <ScorePreview />
         <Companies />
-        <Templates />
       </div>
     </div>
   );
