@@ -33,8 +33,6 @@ const ensureDefaultTemplates = async () => {
 // Get all templates
 router.get('/', async (req, res) => {
   try {
-    await ensureDefaultTemplates();
-
     const { category } = req.query;
     let query = {};
 
@@ -53,7 +51,6 @@ router.get('/', async (req, res) => {
 // Get single template
 router.get('/:id', validateTemplateId, async (req, res) => {
   try {
-    await ensureDefaultTemplates();
     if (sendValidationErrors(req, res)) return;
 
     const template = await Template.findById(req.params.id);
@@ -167,3 +164,4 @@ router.delete('/:id', auth, requireAdmin, validateTemplateId, async (req, res) =
 });
 
 module.exports = router;
+module.exports.ensureDefaultTemplates = ensureDefaultTemplates;

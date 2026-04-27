@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const resumeRoutes = require('./routes/resumes');
 const templateRoutes = require('./routes/templates');
 const contactRoutes = require('./routes/contacts');
+const { ensureDefaultTemplates } = require('./routes/templates');
 
 const app = express();
 
@@ -52,14 +53,54 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// Mongoose connection options for resilience
+const mongooseOptions = {
+  maxPoolSize: 10,
+  minPoolSize: 2,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 10000,
+  retryWrites: true,
+  retryReads: true
+};
+
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/resumax')
-.then(() => {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/resumax', mongooseOptions)
+.then(async () => {
   console.log('Connected to MongoDB');
+  
+  // Seed default templates once at startup
+  try {
+    await ensureDefaultTemplates();
+    console.log('Default templates ensured');
+  } catch (seedError) {
+    console.error('Template seeding error:', seedError.message);
+  }
 })
 .catch((error) => {
   console.error('MongoDB connection error:', error);
   process.exit(1);
+});
+
+// Connection event handlers for monitoring and resilience
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB runtime error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected. Will attempt to reconnect...');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('MongoDB reconnected');
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('Closing MongoDB connection...');
+  await mongoose.connection.close();
+  console.log('MongoDB connection closed');
+  process.exit(0);
 });
 
 const PORT = process.env.PORT || 5000;
