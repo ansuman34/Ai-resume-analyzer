@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: ai-resume-analyzer-api
+    env: node
+    plan: free
+    buildCommand: cd Server && npm install
+    startCommand: cd Server && npm start
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: EMAIL_SERVICE
+        value: gmail
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://ai-resume-analyzer.onrender.com
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5001"
+
+  - type: static
+    name: ai-resume-analyzer
+    env: static
+    buildCommand: cd Frontend && npm install && npm run build
+    staticPublishPath: Frontend/build
+    routes:
+      - path: "/*"
+        methods:
+          - GET
+        redirect:
+          path: "/"
+          statusCode: 200
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://ai-resume-analyzer-api.onrender.com/api
+      - key: REACT_APP_FIREBASE_API_KEY
+        value: AIzaSyC5lFNvI6HCBfdEnc4sENczuXWLjqd-L90
