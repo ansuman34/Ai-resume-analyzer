@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { PDFParse } = require('pdf-parse');
+
 const { askAi } = require('../services/openRouter.service');
 const { analyzeResume } = require('../utils/resumeAnalyzer');
 const Resume = require('../models/Resume');
@@ -34,11 +34,14 @@ const analyzeResumePdf = async (req, res) => {
       return res.status(400).json({ error: 'No PDF uploaded.' });
     }
 
+    const { PDFParse } = require('pdf-parse');
+
     const filePath = req.file.path;
     const buffer = await fs.promises.readFile(filePath);
     const parser = new PDFParse({ data: buffer });
     const data = await parser.getText();
     await parser.destroy().catch(() => {});
+
     const resumeText = (data?.text || '').replace(/\s+/g, ' ').trim();
 
     if (!resumeText || resumeText.length < 40) {
