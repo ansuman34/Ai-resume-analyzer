@@ -70,6 +70,36 @@ export const authAPI = {
     return response.json();
   },
 
+  googleAuth: async (payload) => {
+    const response = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Google authentication failed');
+    }
+
+    return response.json();
+  },
+
+  githubAuth: async (payload) => {
+    const response = await fetch(`${API_BASE_URL}/auth/github`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'GitHub authentication failed');
+    }
+
+    return response.json();
+  },
+
   getProfile: () => apiRequest('/auth/profile'),
 
   updateProfile: (userData) => apiRequest('/auth/profile', {
@@ -160,3 +190,4 @@ const api = {
 };
 
 export default api;
+

@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider, githubProvider, firebaseInitError } from '../config/firebase';
 import { authAPI } from '../services/api';
 
 const AuthContext = createContext();
@@ -81,6 +83,94 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const googleLogin = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      if (!auth || !googleProvider) {
+        throw new Error(
+          firebaseInitError
+            ? `Firebase setup incomplete: ${firebaseInitError}`
+            : 'Firebase is not configured. Please check your environment variables.'
+        );
+      }
+
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+
+      const nameParts = (firebaseUser.displayName || 'User').split(' ');
+      const firstName = nameParts[0] || 'User';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      const payload = {
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || 'User',
+        firstName,
+        lastName,
+        photoURL: firebaseUser.photoURL || '',
+        providerId: firebaseUser.uid,
+      };
+
+      const response = await authAPI.googleAuth(payload);
+
+      localStorage.setItem('token', response.token);
+      setUser(response.user);
+
+      return response;
+    } catch (err) {
+      console.error('Google login error:', err);
+      setError(err.message || 'Google sign-in failed. Please try again.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const githubLogin = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      if (!auth || !githubProvider) {
+        throw new Error(
+          firebaseInitError
+            ? `Firebase setup incomplete: ${firebaseInitError}`
+            : 'Firebase is not configured. Please check your environment variables.'
+        );
+      }
+
+      const result = await signInWithPopup(auth, githubProvider);
+      const firebaseUser = result.user;
+
+      const nameParts = (firebaseUser.displayName || 'User').split(' ');
+      const firstName = nameParts[0] || 'User';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      const payload = {
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || 'User',
+        firstName,
+        lastName,
+        photoURL: firebaseUser.photoURL || '',
+        providerId: firebaseUser.uid,
+      };
+
+      const response = await authAPI.githubAuth(payload);
+
+      localStorage.setItem('token', response.token);
+      setUser(response.user);
+
+      return response;
+    } catch (err) {
+      console.error('GitHub login error:', err);
+      setError(err.message || 'GitHub sign-in failed. Please try again.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
@@ -105,6 +195,8 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     register,
+    googleLogin,
+    githubLogin,
     logout,
     updateProfile,
     isAuthenticated: !!user,
@@ -116,3 +208,4 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+

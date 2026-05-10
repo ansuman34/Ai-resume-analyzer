@@ -26,7 +26,7 @@ export default function Hero() {
             whileTap={{ scale: 0.95 }}
             className="btn-primary"
           >
-            Build Resume ->
+            Build Resume -
           </motion.button>
         </Link>
         <Link to="/ats-analysis">

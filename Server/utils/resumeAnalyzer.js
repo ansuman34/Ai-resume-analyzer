@@ -75,7 +75,8 @@ const scoreToGrade = (score) => {
   if (score >= 85) return 'A';
   if (score >= 75) return 'B';
   if (score >= 65) return 'C';
-  return 'D';
+  if (score >= 50) return 'D';
+  return 'E';
 };
 
 const buildRequiredSkills = (jobDescription = '', targetRole = '') => {

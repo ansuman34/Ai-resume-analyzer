@@ -8,7 +8,6 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
 
-  // Don't show navbar on auth pages
   if (location.pathname === "/login" || location.pathname === "/register") {
     return null;
   }

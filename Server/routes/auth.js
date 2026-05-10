@@ -8,6 +8,15 @@ const { generateResetToken, hashToken, sendPasswordResetEmail } = require('../ut
 
 const router = express.Router();
 
+// Generate JWT token helper
+const generateToken = (userId) => {
+  return jwt.sign(
+    { userId },
+    process.env.JWT_SECRET || 'your-secret-key',
+    { expiresIn: '7d' }
+  );
+};
+
 // Register user
 router.post('/register', [
   body('email').isEmail().normalizeEmail(),
@@ -34,17 +43,13 @@ router.post('/register', [
       email,
       password,
       firstName,
-      lastName
+      lastName,
+      authProvider: 'local'
     });
 
     await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
+    const token = generateToken(user._id);
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -87,12 +92,7 @@ router.post('/login', [
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
+    const token = generateToken(user._id);
 
     res.json({
       message: 'Login successful',
@@ -110,6 +110,122 @@ router.post('/login', [
   }
 });
 
+// Google OAuth
+router.post('/google', async (req, res) => {
+  try {
+    const { email, displayName, firstName, lastName, photoURL, providerId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // If user exists but signed up with a different provider
+      if (user.authProvider !== 'google') {
+        // Update provider info to link Google auth
+        user.authProvider = 'google';
+        user.providerId = providerId || user.providerId;
+        user.photoURL = photoURL || user.photoURL;
+        user.displayName = displayName || user.displayName;
+        await user.save();
+      }
+    } else {
+      // Create new user from Google
+      user = new User({
+        email,
+        firstName: firstName || 'User',
+        lastName: lastName || '',
+        displayName: displayName || firstName || 'User',
+        photoURL: photoURL || '',
+        profilePicture: photoURL || '',
+        providerId: providerId || null,
+        authProvider: 'google'
+      });
+      await user.save();
+    }
+
+    const token = generateToken(user._id);
+
+    res.json({
+      message: 'Google login successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        profilePicture: user.profilePicture,
+        authProvider: user.authProvider
+      }
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ error: 'Server error during Google authentication' });
+  }
+});
+
+// GitHub OAuth
+router.post('/github', async (req, res) => {
+  try {
+    const { email, displayName, firstName, lastName, photoURL, providerId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // If user exists but signed up with a different provider
+      if (user.authProvider !== 'github') {
+        // Update provider info to link GitHub auth
+        user.authProvider = 'github';
+        user.providerId = providerId || user.providerId;
+        user.photoURL = photoURL || user.photoURL;
+        user.displayName = displayName || user.displayName;
+        await user.save();
+      }
+    } else {
+      // Create new user from GitHub
+      user = new User({
+        email,
+        firstName: firstName || 'User',
+        lastName: lastName || '',
+        displayName: displayName || firstName || 'User',
+        photoURL: photoURL || '',
+        profilePicture: photoURL || '',
+        providerId: providerId || null,
+        authProvider: 'github'
+      });
+      await user.save();
+    }
+
+    const token = generateToken(user._id);
+
+    res.json({
+      message: 'GitHub login successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        profilePicture: user.profilePicture,
+        authProvider: user.authProvider
+      }
+    });
+  } catch (error) {
+    console.error('GitHub auth error:', error);
+    res.status(500).json({ error: 'Server error during GitHub authentication' });
+  }
+});
+
 // Get current user profile
 router.get('/profile', auth, async (req, res) => {
   try {
@@ -119,7 +235,10 @@ router.get('/profile', auth, async (req, res) => {
         email: req.user.email,
         firstName: req.user.firstName,
         lastName: req.user.lastName,
+        displayName: req.user.displayName,
         profilePicture: req.user.profilePicture,
+        photoURL: req.user.photoURL,
+        authProvider: req.user.authProvider,
         createdAt: req.user.createdAt
       }
     });
@@ -204,6 +323,13 @@ router.post('/forgot-password', [
       });
     }
 
+    // OAuth users cannot reset password
+    if (user.authProvider !== 'local') {
+      return res.status(400).json({
+        error: `This account uses ${user.authProvider} authentication. Please sign in with ${user.authProvider}.`
+      });
+    }
+
     // Generate reset token
     const resetToken = generateResetToken();
     const hashedToken = hashToken(resetToken);
@@ -273,11 +399,7 @@ router.post('/reset-password', [
     await user.save();
 
     // Generate new JWT token for auto-login
-    const jwtToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
+    const jwtToken = generateToken(user._id);
 
     res.json({
       message: 'Password reset successfully',
@@ -325,3 +447,4 @@ router.post('/verify-reset-token', [
 });
 
 module.exports = router;
+
