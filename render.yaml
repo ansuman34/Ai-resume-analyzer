@@ -19,26 +19,24 @@ services:
       - key: OPENROUTER_API_KEY
         sync: false
       - key: FRONTEND_URL
-        value: https://ai-resume-analyzer.onrender.com
+        value: https://ai-resume-analyzer-1-yiis.onrender.com
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: "5001"
 
-  - type: static
+  - type: web
     name: ai-resume-analyzer
-    env: static
-    buildCommand: cd Frontend && npm install && npm run build
-    staticPublishPath: Frontend/build
+    runtime: static
+    rootDir: Frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./build
     routes:
-      - path: "/*"
-        methods:
-          - GET
-        redirect:
-          path: "/"
-          statusCode: 200
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: REACT_APP_API_URL
         value: https://ai-resume-analyzer-api.onrender.com/api
       - key: REACT_APP_FIREBASE_API_KEY
-        value: AIzaSyC5lFNvI6HCBfdEnc4sENczuXWLjqd-L90
+        sync: false
+      - key: GENERATE_SOURCEMAP
+        value: "false"
